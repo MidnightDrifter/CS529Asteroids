@@ -83,12 +83,18 @@
     <ClCompile Include="src\GameStateMgr.c" />
     <ClCompile Include="src\GameState_Asteroids.c" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\Math2D.c" />
+    <ClCompile Include="src\Matrix2D.c" />
+    <ClCompile Include="src\Vector2D.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\GameStateList.h" />
     <ClInclude Include="include\GameStateMgr.h" />
     <ClInclude Include="include\GameState_Asteroids.h" />
     <ClInclude Include="include\main.h" />
+    <ClInclude Include="include\Math2D.h" />
+    <ClInclude Include="include\Matrix2D.h" />
+    <ClInclude Include="include\Vector2D.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\GameState_Asteroids.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GameStateMgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Math2D.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Matrix2D.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vector2D.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\main.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GameStateMgr.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GameStateList.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GameState_Asteroids.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math2D.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Matrix2D.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Vector2D.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{0304e51c-48ae-4955-a047-9a8f7cf2055e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{b091016b-aba0-4261-bd57-cf8cab33f08e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
