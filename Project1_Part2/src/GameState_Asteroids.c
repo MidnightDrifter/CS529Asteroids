@@ -27,7 +27,7 @@
 #define SHIP_ACCEL_BACKWARD			-100.0f				// Ship backward acceleration (in m/s^2)
 #define SHIP_ROT_SPEED				(2.0f * PI)			// Ship rotation speed (radian/second)
 #define HOMING_MISSILE_ROT_SPEED	(PI / 2.0f)			// Homing missile rotation speed (radian/second)
-#define BULLET_SPEED				100.0f				// Bullet speed (m/s)
+#define BULLET_SPEED				150.0f				// Bullet speed (m/s)
 
 // ---------------------------------------------------------------------------
 #define FRICTION	0.99f
@@ -36,6 +36,7 @@
 #define ASTEROID_SIZE	50.f
 #define MISSILE_WIDTH	10.f
 #define MISSILE_HEIGHT  7.5f
+#define MISSILE_SPEED	75.f
 enum OBJECT_TYPE
 {
 	// list of game object types
@@ -219,7 +220,7 @@ void GameStateAsteroidsLoad(void)
 	AEGfxMeshStart();
 	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
 		-0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
+		0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f);
 	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
 		0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
 		0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f);
@@ -236,12 +237,12 @@ void GameStateAsteroidsLoad(void)
 	pShape->mType = OBJECT_TYPE_ASTEROID;
 
 	AEGfxMeshStart();
-	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		-0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
-	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFFFF00, 0.0f, 0.0f,
+		-0.5f, -0.5f, 0xFFFFFF00, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFFFF00, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFFFF00, 0.0f, 0.0f,
+		0.5f, 0.5f, 0xFFFFFF00, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFFFF00, 0.0f, 0.0f);
 	pShape->mpMesh = AEGfxMeshEnd();
 
 
@@ -256,12 +257,12 @@ void GameStateAsteroidsLoad(void)
 	pShape->mType = OBJECT_TYPE_HOMING_MISSILE;
 
 	AEGfxMeshStart();
-	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		-0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
-	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
-		0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFF00FF00, 0.0f, 0.0f,
+		-0.5f, -0.5f, 0xFF00FF00, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFF00FF00, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFF00FF00, 0.0f, 0.0f,
+		0.5f, 0.5f, 0xFF00FF00, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFF00FF00, 0.0f, 0.0f);
 	pShape->mpMesh = AEGfxMeshEnd();
 
 }
@@ -341,6 +342,7 @@ void GameStateAsteroidsUpdate(void)
 		Vector2D curVel;
 		Vector2DSet(&curVel, sgpShip->mpComponent_Physics->mVelocity.x, sgpShip->mpComponent_Physics->mVelocity.y);
 		Vector2DScaleAdd(&(sgpShip->mpComponent_Physics->mVelocity), &accel, &curVel, frameTime);
+		Vector2DScale(&(sgpShip->mpComponent_Physics->mVelocity), &(sgpShip->mpComponent_Physics->mVelocity), FRICTION);
 		//Vector2DScale(&(sgpShip->mpComponent_Physics->mVelocity), &(sgpShip->mpComponent_Physics->mVelocity), FRICTION);
 		//Vector2DAdd(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
 	}
@@ -354,6 +356,7 @@ void GameStateAsteroidsUpdate(void)
 		Vector2D curVel;
 		Vector2DSet(&curVel, sgpShip->mpComponent_Physics->mVelocity.x, sgpShip->mpComponent_Physics->mVelocity.y);
 		Vector2DScaleAdd(&(sgpShip->mpComponent_Physics->mVelocity), &accel, &curVel, frameTime);
+		Vector2DScale(&(sgpShip->mpComponent_Physics->mVelocity), &(sgpShip->mpComponent_Physics->mVelocity), FRICTION);
 		//Vector2DScale(&(sgpShip->mpComponent_Physics->mVelocity), &(sgpShip->mpComponent_Physics->mVelocity), FRICTION);
 		//Vector2DAdd(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
 	}
@@ -378,7 +381,12 @@ void GameStateAsteroidsUpdate(void)
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	if (AEInputCheckTriggered(VK_SPACE))
 	{
-		GameObjectInstanceCreate(OBJECT_TYPE_BULLET);
+		//Double check this
+		GameObjectInstance* t;
+		t = (GameObjectInstanceCreate(OBJECT_TYPE_BULLET));
+		Vector2DSet(&(t->mpComponent_Physics->mVelocity), BULLET_SPEED * cosf(sgpShip->mpComponent_Transform->mAngle), BULLET_SPEED * sinf( sgpShip->mpComponent_Transform->mAngle));
+		t = NULL;
+		
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -389,7 +397,13 @@ void GameStateAsteroidsUpdate(void)
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	if (AEInputCheckTriggered('M'))
 	{
-		GameObjectInstanceCreate(OBJECT_TYPE_HOMING_MISSILE);
+		//GameObjectInstanceCreate(OBJECT_TYPE_HOMING_MISSILE);
+	//	Vector2DSet(&(GameObjectInstanceCreate(OBJECT_TYPE_HOMING_MISSILE)->mpComponent_Physics->mVelocity), sgpShip->mpComponent_Physics->mVelocity.x, sgpShip->mpComponent_Physics->mVelocity.y);
+
+		GameObjectInstance* t;
+		t = (GameObjectInstanceCreate(OBJECT_TYPE_HOMING_MISSILE));
+		Vector2DSet(&(t->mpComponent_Physics->mVelocity), MISSILE_SPEED * cosf(sgpShip->mpComponent_Transform->mAngle), MISSILE_SPEED * sinf(sgpShip->mpComponent_Transform->mAngle));
+		t = NULL;
 	}
 
 
@@ -414,10 +428,10 @@ void GameStateAsteroidsUpdate(void)
 			continue;
 
 
-		if (pInst->mFlag == OBJECT_TYPE_SHIP)
-		{
-			Vector2DScale(&(sgpShip->mpComponent_Physics->mVelocity), &(sgpShip->mpComponent_Physics->mVelocity), FRICTION);
-		}
+		//if (pInst->mFlag == OBJECT_TYPE_SHIP)
+	//	{
+			
+		//}
 
 		Vector2D curPos;
 		curPos.x = pInst->mpComponent_Transform->mPosition.x;
@@ -671,7 +685,7 @@ GameObjectInstance* GameObjectInstanceCreate(unsigned int ObjectType)			// From 
 				
 			case OBJECT_TYPE_BULLET:
 				AddComponent_Sprite(pInst, OBJECT_TYPE_BULLET);
-				AddComponent_Transform(pInst, 0, 0.0f, BULLET_SIZE, BULLET_SIZE);
+				AddComponent_Transform(pInst, &(sgpShip->mpComponent_Transform->mPosition), 0.0f, BULLET_SIZE, BULLET_SIZE);
 				AddComponent_Physics(pInst, 0);
 				break;
 
@@ -683,7 +697,7 @@ GameObjectInstance* GameObjectInstanceCreate(unsigned int ObjectType)			// From 
 
 			case OBJECT_TYPE_HOMING_MISSILE:
 				AddComponent_Sprite(pInst, OBJECT_TYPE_HOMING_MISSILE);
-				AddComponent_Transform(pInst, 0, 0.0f,MISSILE_WIDTH, MISSILE_HEIGHT);
+				AddComponent_Transform(pInst, &(sgpShip->mpComponent_Transform->mPosition), 0.0f,MISSILE_WIDTH, MISSILE_HEIGHT);
 				AddComponent_Physics(pInst, 0);
 				AddComponent_Target(pInst, 0);
 				break;
