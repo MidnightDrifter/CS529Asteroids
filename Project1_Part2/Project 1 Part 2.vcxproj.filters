@@ -51,4 +51,7 @@
       <UniqueIdentifier>{b091016b-aba0-4261-bd57-cf8cab33f08e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Project 1 Part 2.pdf" />
+  </ItemGroup>
 </Project>

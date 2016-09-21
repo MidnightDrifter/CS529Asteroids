@@ -96,6 +96,9 @@
     <ClInclude Include="include\Matrix2D.h" />
     <ClInclude Include="include\Vector2D.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Project 1 Part 2.pdf" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

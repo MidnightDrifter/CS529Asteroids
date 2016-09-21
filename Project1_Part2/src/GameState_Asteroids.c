@@ -23,14 +23,14 @@
 // Feel free to change these values in ordet to make the game more fun
 #define SHIP_INITIAL_NUM			3					// Initial number of ship lives
 #define SHIP_SIZE					25.0f				// Ship size
-#define SHIP_ACCEL_FORWARD			50.0f				// Ship forward acceleration (in m/s^2)
+#define SHIP_ACCEL_FORWARD			75.0f				// Ship forward acceleration (in m/s^2)
 #define SHIP_ACCEL_BACKWARD			-100.0f				// Ship backward acceleration (in m/s^2)
 #define SHIP_ROT_SPEED				(2.0f * PI)			// Ship rotation speed (radian/second)
 #define HOMING_MISSILE_ROT_SPEED	(PI / 2.0f)			// Homing missile rotation speed (radian/second)
 #define BULLET_SPEED				100.0f				// Bullet speed (m/s)
 
 // ---------------------------------------------------------------------------
-
+#define FRICTION	0.99f
 enum OBJECT_TYPE
 {
 	// list of game object types
@@ -299,16 +299,28 @@ void GameStateAsteroidsUpdate(void)
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	if (AEInputCheckCurr(VK_UP))
 	{
-		Vector2D added;
-		Vector2DSet(&added, cosf(sgpShip->mpComponent_Transform->mAngle), sinf(sgpShip->mpComponent_Transform->mAngle));
-		Vector2DAdd(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
+		Vector2D accel;
+		Vector2DSet(&accel, cosf(sgpShip->mpComponent_Transform->mAngle), sinf(sgpShip->mpComponent_Transform->mAngle));
+		Vector2DScale(&accel, &accel, SHIP_ACCEL_FORWARD);
+
+		Vector2D curVel;
+		Vector2DSet(&curVel, sgpShip->mpComponent_Physics->mVelocity.x, sgpShip->mpComponent_Physics->mVelocity.y);
+		Vector2DScaleAdd(&(sgpShip->mpComponent_Physics->mVelocity), &accel, &curVel, frameTime);
+		//Vector2DScale(&(sgpShip->mpComponent_Physics->mVelocity), &(sgpShip->mpComponent_Physics->mVelocity), FRICTION);
+		//Vector2DAdd(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
 	}
 
 	if (AEInputCheckCurr(VK_DOWN))
 	{
-		Vector2D added;
-		Vector2DSet(&added, -cosf(sgpShip->mpComponent_Transform->mAngle), -sinf(sgpShip->mpComponent_Transform->mAngle));
-		Vector2DAdd(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
+		Vector2D accel;
+		Vector2DSet(&accel, cosf(sgpShip->mpComponent_Transform->mAngle), sinf(sgpShip->mpComponent_Transform->mAngle));
+		Vector2DScale(&accel, &accel, SHIP_ACCEL_BACKWARD);
+
+		Vector2D curVel;
+		Vector2DSet(&curVel, sgpShip->mpComponent_Physics->mVelocity.x, sgpShip->mpComponent_Physics->mVelocity.y);
+		Vector2DScaleAdd(&(sgpShip->mpComponent_Physics->mVelocity), &accel, &curVel, frameTime);
+		//Vector2DScale(&(sgpShip->mpComponent_Physics->mVelocity), &(sgpShip->mpComponent_Physics->mVelocity), FRICTION);
+		//Vector2DAdd(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
 	}
 
 	if (AEInputCheckCurr(VK_LEFT))
@@ -354,13 +366,32 @@ void GameStateAsteroidsUpdate(void)
 	// -- If implemented correctly, you will be able to control the ship (basic 2D movement)
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 	for (i = 0; i < GAME_OBJ_INST_NUM_MAX; i++)
 	{
 		GameObjectInstance* pInst = sgGameObjectInstanceList + i;
 
 		// skip non-active object
-		if ((pInst->mFlag & FLAG_ACTIVE) == 0)
+		if ((pInst->mFlag & FLAG_ACTIVE) == 0  || pInst==NULL)
 			continue;
+
+
+		if (pInst->mFlag == OBJECT_TYPE_SHIP)
+		{
+			Vector2DScale(&(sgpShip->mpComponent_Physics->mVelocity), &(sgpShip->mpComponent_Physics->mVelocity), FRICTION);
+		}
+
+		Vector2D curPos;
+		curPos.x = pInst->mpComponent_Transform->mPosition.x;
+		curPos.y = pInst->mpComponent_Transform->mPosition.y;
+
+		pInst->mpComponent_Transform->mPosition.x = (curPos.x + (pInst->mpComponent_Physics->mVelocity.x) * frameTime);
+
+		pInst->mpComponent_Transform->mPosition.y = (curPos.y + (pInst->mpComponent_Physics->mVelocity.y) * frameTime);
+
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
