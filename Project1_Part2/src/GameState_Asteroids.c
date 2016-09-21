@@ -9,6 +9,9 @@
 // ---------------------------------------------------------------------------
 
 #include "main.h"
+#include "Matrix2D.h"
+#include "Vector2D.h"
+#include "Math2D.h"
 
 // ---------------------------------------------------------------------------
 // Defines
@@ -19,7 +22,7 @@
 
 // Feel free to change these values in ordet to make the game more fun
 #define SHIP_INITIAL_NUM			3					// Initial number of ship lives
-#define SHIP_SIZE					100.0f				// Ship size
+#define SHIP_SIZE					25.0f				// Ship size
 #define SHIP_ACCEL_FORWARD			50.0f				// Ship forward acceleration (in m/s^2)
 #define SHIP_ACCEL_BACKWARD			-100.0f				// Ship backward acceleration (in m/s^2)
 #define SHIP_ROT_SPEED				(2.0f * PI)			// Ship rotation speed (radian/second)
@@ -71,12 +74,12 @@ typedef struct
 
 typedef struct
 {
-	AEVec2					mPosition;			// Current position
+	Vector2D					mPosition;			// Current position
 	float					mAngle;				// Current angle
 	float					mScaleX;			// Current X scaling value
 	float					mScaleY;			// Current Y scaling value
 
-	AEMtx33					mTransform;			// Object transformation matrix: Each frame, calculate the object instance's transformation matrix and save it here
+	Matrix2D					mTransform;			// Object transformation matrix: Each frame, calculate the object instance's transformation matrix and save it here
 
 	GameObjectInstance *	mpOwner;			// This component's owner
 }Component_Transform;
@@ -85,7 +88,7 @@ typedef struct
 
 typedef struct
 {
-	AEVec2					mVelocity;			// Current velocity
+	Vector2D					mVelocity;			// Current velocity
 
 	GameObjectInstance *	mpOwner;			// This component's owner
 }Component_Physics;
@@ -142,9 +145,9 @@ static void							GameObjectInstanceDestroy(GameObjectInstance* pInst);
 // ---------------------------------------------------------------------------
 
 // Functions to add/remove components
-static void AddComponent_Transform(GameObjectInstance *pInst, AEVec2 *pPosition, float Angle, float ScaleX, float ScaleY);
+static void AddComponent_Transform(GameObjectInstance *pInst, Vector2D *pPosition, float Angle, float ScaleX, float ScaleY);
 static void AddComponent_Sprite(GameObjectInstance *pInst, unsigned int ShapeType);
-static void AddComponent_Physics(GameObjectInstance *pInst, AEVec2 *pVelocity);
+static void AddComponent_Physics(GameObjectInstance *pInst, Vector2D *pVelocity);
 static void AddComponent_Target(GameObjectInstance *pInst, GameObjectInstance *pTarget);
 
 static void RemoveComponent_Transform(GameObjectInstance *pInst);
@@ -296,16 +299,16 @@ void GameStateAsteroidsUpdate(void)
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	if (AEInputCheckCurr(VK_UP))
 	{
-		AEVec2 added;
-		AEVec2Set(&added, cosf(sgpShip->mpComponent_Transform->mAngle), sinf(sgpShip->mpComponent_Transform->mAngle));
-		AEVec2Add(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
+		Vector2D added;
+		Vector2DSet(&added, cosf(sgpShip->mpComponent_Transform->mAngle), sinf(sgpShip->mpComponent_Transform->mAngle));
+		Vector2DAdd(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
 	}
 
 	if (AEInputCheckCurr(VK_DOWN))
 	{
-		AEVec2 added;
-		AEVec2Set(&added, -cosf(sgpShip->mpComponent_Transform->mAngle), -sinf(sgpShip->mpComponent_Transform->mAngle));
-		AEVec2Add(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
+		Vector2D added;
+		Vector2DSet(&added, -cosf(sgpShip->mpComponent_Transform->mAngle), -sinf(sgpShip->mpComponent_Transform->mAngle));
+		Vector2DAdd(&sgpShip->mpComponent_Transform->mPosition, &sgpShip->mpComponent_Transform->mPosition, &added);
 	}
 
 	if (AEInputCheckCurr(VK_LEFT))
@@ -438,11 +441,11 @@ void GameStateAsteroidsUpdate(void)
 
 	for (i = 0; i < GAME_OBJ_INST_NUM_MAX; i++)
 	{
-		AEMtx33		 trans, rot, scale;
+		Matrix2D		 trans, rotate, scale;
 		GameObjectInstance* pInst = sgGameObjectInstanceList + i;
 		
 		// skip non-active object
-		if ((pInst->mFlag & FLAG_ACTIVE) == 0)
+		if(pInst == NULL || (pInst->mFlag & FLAG_ACTIVE) == 0  )
 			continue;
 
 
@@ -454,6 +457,15 @@ void GameStateAsteroidsUpdate(void)
 		// -- Reminder: Scale should be applied first, then rotation, then translation.
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////
+
+		Matrix2DScale(&scale, pInst->mpComponent_Transform->mScaleX, pInst->mpComponent_Transform->mScaleY);
+		Matrix2DRotRad(&rotate, pInst->mpComponent_Transform->mAngle);
+		Matrix2DTranslate(&trans, pInst->mpComponent_Transform->mPosition.x, pInst->mpComponent_Transform->mPosition.y);
+
+		Matrix2DIdentity(&(pInst->mpComponent_Transform->mTransform));
+		Matrix2DConcat(&(pInst->mpComponent_Transform->mTransform), &trans, &rotate);
+		Matrix2DConcat(&(pInst->mpComponent_Transform->mTransform), &(pInst->mpComponent_Transform->mTransform), &scale);
+
 
 
 		// Compute the scaling matrix
@@ -553,7 +565,7 @@ GameObjectInstance* GameObjectInstanceCreate(unsigned int ObjectType)			// From 
 			{
 			case OBJECT_TYPE_SHIP:
 				AddComponent_Sprite(pInst, OBJECT_TYPE_SHIP);
-				AddComponent_Transform(pInst, 0, 0.0f, 1.0f, 1.0f);
+				AddComponent_Transform(pInst, 0, 0.0f, SHIP_SIZE, SHIP_SIZE);   //Initial scale is 1, setting it to predefined SHIP_SIZE
 				AddComponent_Physics(pInst, 0);
 				break;
 
@@ -609,7 +621,7 @@ void GameObjectInstanceDestroy(GameObjectInstance* pInst)
 
 // ---------------------------------------------------------------------------
 
-void AddComponent_Transform(GameObjectInstance *pInst, AEVec2 *pPosition, float Angle, float ScaleX, float ScaleY)
+void AddComponent_Transform(GameObjectInstance *pInst, Vector2D *pPosition, float Angle, float ScaleX, float ScaleY)
 {
 	if (0 != pInst)
 	{
@@ -618,8 +630,8 @@ void AddComponent_Transform(GameObjectInstance *pInst, AEVec2 *pPosition, float 
 			pInst->mpComponent_Transform = (Component_Transform *)calloc(1, sizeof(Component_Transform));
 		}
 
-		AEVec2 zeroVec2;
-		AEVec2Zero(&zeroVec2);
+		Vector2D zeroVec2;
+		Vector2DZero(&zeroVec2);
 
 		pInst->mpComponent_Transform->mScaleX = ScaleX;
 		pInst->mpComponent_Transform->mScaleY = ScaleY;
@@ -647,7 +659,7 @@ void AddComponent_Sprite(GameObjectInstance *pInst, unsigned int ShapeType)
 
 // ---------------------------------------------------------------------------
 
-void AddComponent_Physics(GameObjectInstance *pInst, AEVec2 *pVelocity)
+void AddComponent_Physics(GameObjectInstance *pInst, Vector2D *pVelocity)
 {
 	if (0 != pInst)
 	{
@@ -656,8 +668,8 @@ void AddComponent_Physics(GameObjectInstance *pInst, AEVec2 *pVelocity)
 			pInst->mpComponent_Physics = (Component_Physics *)calloc(1, sizeof(Component_Physics));
 		}
 
-		AEVec2 zeroVec2;
-		AEVec2Zero(&zeroVec2);
+		Vector2D zeroVec2;
+		Vector2DZero(&zeroVec2);
 
 		pInst->mpComponent_Physics->mVelocity = pVelocity ? *pVelocity : zeroVec2;
 		pInst->mpComponent_Physics->mpOwner = pInst;
