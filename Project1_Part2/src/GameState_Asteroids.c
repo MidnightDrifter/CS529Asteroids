@@ -31,6 +31,11 @@
 
 // ---------------------------------------------------------------------------
 #define FRICTION	0.99f
+#define ASTREROID_SHIP_SCALE		4.f  //Asteroid is 4x larger than ship
+#define BULLET_SIZE		5.f
+#define ASTEROID_SIZE	50.f
+#define MISSILE_WIDTH	10.f
+#define MISSILE_HEIGHT  7.5f
 enum OBJECT_TYPE
 {
 	// list of game object types
@@ -208,8 +213,17 @@ void GameStateAsteroidsLoad(void)
 	// -- Create the bullet shape
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////
+	pShape = sgShapes + sgShapeNum++;
+	pShape->mType = OBJECT_TYPE_BULLET;
 
-
+	AEGfxMeshStart();
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		-0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f);
+	pShape->mpMesh = AEGfxMeshEnd();
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -217,7 +231,18 @@ void GameStateAsteroidsLoad(void)
 	// -- Create the asteroid shape
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////
+	//Same as bullet, just different scale?
+	pShape = sgShapes + sgShapeNum++;
+	pShape->mType = OBJECT_TYPE_ASTEROID;
 
+	AEGfxMeshStart();
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		-0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f);
+	pShape->mpMesh = AEGfxMeshEnd();
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,8 +251,18 @@ void GameStateAsteroidsLoad(void)
 	// -- Create the homing missile shape
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////
+	//Same as bullet, just different scale?
+	pShape = sgShapes + sgShapeNum++;
+	pShape->mType = OBJECT_TYPE_HOMING_MISSILE;
 
-
+	AEGfxMeshStart();
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		-0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, 0.5f, 0xFFFF0000, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFF0000, 0.0f, 0.0f);
+	pShape->mpMesh = AEGfxMeshEnd();
 
 }
 
@@ -343,7 +378,7 @@ void GameStateAsteroidsUpdate(void)
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	if (AEInputCheckTriggered(VK_SPACE))
 	{
-
+		GameObjectInstanceCreate(OBJECT_TYPE_BULLET);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -354,7 +389,7 @@ void GameStateAsteroidsUpdate(void)
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	if (AEInputCheckTriggered('M'))
 	{
-
+		GameObjectInstanceCreate(OBJECT_TYPE_HOMING_MISSILE);
 	}
 
 
@@ -420,12 +455,33 @@ void GameStateAsteroidsUpdate(void)
 		}
 
 		// Bullet behavior
-
+		else if (pInst->mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_BULLET)
+		{
+			
+			if(pInst->mpComponent_Transform->mPosition.x > winMaxX || pInst->mpComponent_Transform->mPosition.x < winMinX || pInst->mpComponent_Transform->mPosition.y > winMaxY || pInst->mpComponent_Transform->mPosition.y < winMinY)
+			{
+				GameObjectInstanceDestroy(pInst);
+			}
+		}
 
 		// Asteroid behavior
+		else if (pInst->mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_ASTEROID)
+		{
 
+			pInst->mpComponent_Transform->mPosition.x = AEWrap(pInst->mpComponent_Transform->mPosition.x, winMinX - SHIP_SIZE*ASTREROID_SHIP_SCALE, winMaxX + SHIP_SIZE*ASTREROID_SHIP_SCALE);
+			pInst->mpComponent_Transform->mPosition.y = AEWrap(pInst->mpComponent_Transform->mPosition.y, winMinY - SHIP_SIZE*ASTREROID_SHIP_SCALE, winMaxY + SHIP_SIZE*ASTREROID_SHIP_SCALE);
+		}
 
 		// Homing missile behavior (Not every game object instance will have this component!)
+
+		else if (pInst->mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_HOMING_MISSILE)
+		{
+
+		}
+		
+
+		
+
 	}
 
 
@@ -525,7 +581,7 @@ void GameStateAsteroidsDraw(void)
 		GameObjectInstance* pInst = sgGameObjectInstanceList + i;
 
 		// skip non-active object
-		if ((pInst->mFlag & FLAG_ACTIVE) == 0)
+		if ((pInst->mFlag & FLAG_ACTIVE) == 0  || pInst==NULL)
 			continue;
 		
 		// Already implemented. Explanation:
@@ -553,6 +609,14 @@ void GameStateAsteroidsFree(void)
 	//  -- Reset the number of active game objects instances
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////
+
+	for (int i = 0; sgGameObjectInstanceNum > 0 && i < GAME_OBJ_INST_NUM_MAX &&  sgGameObjectInstanceList[i].mFlag == FLAG_ACTIVE ; i++)
+	{
+		GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
+	}
+
+
+
 }
 
 // ---------------------------------------------------------------------------
@@ -565,6 +629,11 @@ void GameStateAsteroidsUnload(void)
 	//  -- Destroy all the shapes, using the “AEGfxMeshFree” function.
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////
+	for (int i = 0; i < sgShapeNum; i++)  //CHECK - might be <= instead of <
+	{
+		AEGfxMeshFree(sgShapes[i].mpMesh);
+	}
+
 }
 
 // ---------------------------------------------------------------------------
@@ -599,22 +668,22 @@ GameObjectInstance* GameObjectInstanceCreate(unsigned int ObjectType)			// From 
 				AddComponent_Transform(pInst, 0, 0.0f, SHIP_SIZE, SHIP_SIZE);   //Initial scale is 1, setting it to predefined SHIP_SIZE
 				AddComponent_Physics(pInst, 0);
 				break;
-
+				
 			case OBJECT_TYPE_BULLET:
 				AddComponent_Sprite(pInst, OBJECT_TYPE_BULLET);
-				AddComponent_Transform(pInst, 0, 0.0f, 1.0f, 1.0f);
+				AddComponent_Transform(pInst, 0, 0.0f, BULLET_SIZE, BULLET_SIZE);
 				AddComponent_Physics(pInst, 0);
 				break;
 
 			case OBJECT_TYPE_ASTEROID:
 				AddComponent_Sprite(pInst, OBJECT_TYPE_ASTEROID);
-				AddComponent_Transform(pInst, 0, 0.0f, 1.0f, 1.0f);
+				AddComponent_Transform(pInst, 0, 0.0f,ASTEROID_SIZE, ASTEROID_SIZE);
 				AddComponent_Physics(pInst, 0);
 				break;
 
 			case OBJECT_TYPE_HOMING_MISSILE:
 				AddComponent_Sprite(pInst, OBJECT_TYPE_HOMING_MISSILE);
-				AddComponent_Transform(pInst, 0, 0.0f, 1.0f, 1.0f);
+				AddComponent_Transform(pInst, 0, 0.0f,MISSILE_WIDTH, MISSILE_HEIGHT);
 				AddComponent_Physics(pInst, 0);
 				AddComponent_Target(pInst, 0);
 				break;
