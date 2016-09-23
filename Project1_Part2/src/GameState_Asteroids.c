@@ -31,7 +31,8 @@
 
 // ---------------------------------------------------------------------------
 #define FRICTION	0.99f
-#define ASTREROID_SHIP_SCALE		4.f  //Asteroid is 4x larger than ship
+#define ASTREROID_SHIP_SCALE		4.f  //Asteroid is 4x larger than ship -- not really but eh
+#define ASTEROID_SPEED				50.f
 #define BULLET_SIZE		5.f
 #define ASTEROID_SIZE	50.f
 #define MISSILE_WIDTH	10.f
@@ -135,6 +136,8 @@ static unsigned long			sgGameObjectInstanceNum;								// The number of active g
 
 // pointer ot the ship object
 static GameObjectInstance*		sgpShip;												// Pointer to the "Ship" game object instance
+static Vector2D				sgpShipStartPos;				//Pointer to ship's initial position
+static Vector2D				sgpShipStartPhys;				//Pointer to ship's starting physics stuff
 
 // number of ship available (lives 0 = game over)
 static long						sgShipLives;											// The number of lives left
@@ -291,6 +294,30 @@ void GameStateAsteroidsInit(void)
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+		GameObjectInstance* p = GameObjectInstanceCreate(OBJECT_TYPE_ASTEROID);
+		Vector2DSet(&(p->mpComponent_Transform->mPosition), 75, 321);
+		Vector2DSet(&(p->mpComponent_Physics->mVelocity), 60, -45);
+		p->mpComponent_Transform->mScaleX *= 3;
+		p->mpComponent_Transform->mScaleY *= 3;
+
+
+		 p = GameObjectInstanceCreate(OBJECT_TYPE_ASTEROID);
+		Vector2DSet(&(p->mpComponent_Transform->mPosition), -75, 75);
+		Vector2DSet(&(p->mpComponent_Physics->mVelocity), -30, 20);
+		p->mpComponent_Transform->mScaleX *= 2;
+		p->mpComponent_Transform->mScaleY *= 2;
+
+
+		p = GameObjectInstanceCreate(OBJECT_TYPE_ASTEROID);
+		Vector2DSet(&(p->mpComponent_Transform->mPosition),200, 10);
+		Vector2DSet(&(p->mpComponent_Physics->mVelocity),-10,22 );
+
+		p = NULL;
+	
+
+
+
 	// reset the score and the number of ship
 	sgScore			= 0;
 	sgShipLives		= SHIP_INITIAL_NUM;
@@ -313,7 +340,7 @@ void GameStateAsteroidsUpdate(void)
 	winMinX = AEGfxGetWinMinX();
 	winMinY = AEGfxGetWinMinY();
 
-	
+
 	// ======================
 	// Getting the frame time
 	// ======================
@@ -384,9 +411,9 @@ void GameStateAsteroidsUpdate(void)
 		//Double check this
 		GameObjectInstance* t;
 		t = (GameObjectInstanceCreate(OBJECT_TYPE_BULLET));
-		Vector2DSet(&(t->mpComponent_Physics->mVelocity), BULLET_SPEED * cosf(sgpShip->mpComponent_Transform->mAngle), BULLET_SPEED * sinf( sgpShip->mpComponent_Transform->mAngle));
+		Vector2DSet(&(t->mpComponent_Physics->mVelocity), BULLET_SPEED * cosf(sgpShip->mpComponent_Transform->mAngle), BULLET_SPEED * sinf(sgpShip->mpComponent_Transform->mAngle));
 		t = NULL;
-		
+
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -403,6 +430,7 @@ void GameStateAsteroidsUpdate(void)
 		GameObjectInstance* t;
 		t = (GameObjectInstanceCreate(OBJECT_TYPE_HOMING_MISSILE));
 		Vector2DSet(&(t->mpComponent_Physics->mVelocity), MISSILE_SPEED * cosf(sgpShip->mpComponent_Transform->mAngle), MISSILE_SPEED * sinf(sgpShip->mpComponent_Transform->mAngle));
+
 		t = NULL;
 	}
 
@@ -424,13 +452,13 @@ void GameStateAsteroidsUpdate(void)
 		GameObjectInstance* pInst = sgGameObjectInstanceList + i;
 
 		// skip non-active object
-		if ((pInst->mFlag & FLAG_ACTIVE) == 0  || pInst==NULL)
+		if ((pInst->mFlag & FLAG_ACTIVE) == 0 || pInst == NULL)
 			continue;
 
 
 		//if (pInst->mFlag == OBJECT_TYPE_SHIP)
 	//	{
-			
+
 		//}
 
 		Vector2D curPos;
@@ -459,7 +487,7 @@ void GameStateAsteroidsUpdate(void)
 		// skip non-active object
 		if ((pInst->mFlag & FLAG_ACTIVE) == 0)
 			continue;
-		
+
 		// check if the object is a ship
 		if (pInst->mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_SHIP)
 		{
@@ -471,8 +499,8 @@ void GameStateAsteroidsUpdate(void)
 		// Bullet behavior
 		else if (pInst->mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_BULLET)
 		{
-			
-			if(pInst->mpComponent_Transform->mPosition.x > winMaxX || pInst->mpComponent_Transform->mPosition.x < winMinX || pInst->mpComponent_Transform->mPosition.y > winMaxY || pInst->mpComponent_Transform->mPosition.y < winMinY)
+
+			if (pInst->mpComponent_Transform->mPosition.x > winMaxX || pInst->mpComponent_Transform->mPosition.x < winMinX || pInst->mpComponent_Transform->mPosition.y > winMaxY || pInst->mpComponent_Transform->mPosition.y < winMinY)
 			{
 				GameObjectInstanceDestroy(pInst);
 			}
@@ -490,11 +518,24 @@ void GameStateAsteroidsUpdate(void)
 
 		else if (pInst->mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_HOMING_MISSILE)
 		{
+			if (pInst->mpComponent_Target->mpTarget->mFlag != FLAG_ACTIVE)
+			{
+				for (int i = 0; i < GAME_OBJ_INST_NUM_MAX; i++)
+				{
+					if (sgGameObjectInstanceList[i].mFlag == FLAG_ACTIVE && sgGameObjectInstanceList[i].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_ASTEROID)
+					{
+						pInst->mpComponent_Target->mpTarget = &sgGameObjectInstanceList[i];
+						i = GAME_OBJ_INST_NUM_MAX;
+					}
+				}
+			}
+
+			//Homing logic goes here
 
 		}
-		
 
-		
+
+
 
 	}
 
@@ -536,6 +577,61 @@ void GameStateAsteroidsUpdate(void)
 	*/
 
 
+	for (int i = 0; i < GAME_OBJ_INST_NUM_MAX; i++)
+	{
+	
+
+		if (sgGameObjectInstanceList[i].mFlag == FLAG_ACTIVE && sgGameObjectInstanceList[i].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_ASTEROID)
+		{
+			for (int j = 0; j < GAME_OBJ_INST_NUM_MAX; j++)
+			{
+				if (sgGameObjectInstanceList[j].mFlag != FLAG_ACTIVE || sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_ASTEROID)
+				{
+					continue;
+				}
+
+				if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_SHIP)
+				{
+					if (1==StaticRectToStaticRect(&(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY, &(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), sgGameObjectInstanceList[j].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[j].mpComponent_Transform->mScaleY))
+					{
+						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
+						//GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
+						//sgpShip = GameObjectInstanceCreate(OBJECT_TYPE_SHIP);
+						
+						
+						Vector2DSet(&sgpShip->mpComponent_Transform->mPosition, sgpShipStartPos.x, sgpShipStartPos.y);
+						Vector2DSet(&sgpShip->mpComponent_Physics->mVelocity, sgpShipStartPhys.x, sgpShipStartPhys.y);
+						//sgpShip->mpComponent_Transform = sgpShipStartPos;
+						//sgpShip->mpComponent_Physics = sgpShipStartPhys;
+					}
+				}
+
+
+				else if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_BULLET)
+				{
+					if (1==StaticPointToStaticRect(&(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), &(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY))
+					{
+						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
+						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
+					}
+				}
+
+
+				else if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_HOMING_MISSILE)
+				{
+					if (1==StaticRectToStaticRect(&(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY, &(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), sgGameObjectInstanceList[j].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[j].mpComponent_Transform->mScaleY))
+					{
+						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
+						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
+						
+					}
+				}
+
+			}
+		}
+	}
+
+
 	// =====================================
 	// calculate the matrix for all objects
 	// =====================================
@@ -575,7 +671,6 @@ void GameStateAsteroidsUpdate(void)
 		// Concatenate the 3 matrix in the correct order in the object instance's transform component's "mTransform" matrix
 	}
 }
-
 // ---------------------------------------------------------------------------
 
 void GameStateAsteroidsDraw(void)
@@ -681,6 +776,8 @@ GameObjectInstance* GameObjectInstanceCreate(unsigned int ObjectType)			// From 
 				AddComponent_Sprite(pInst, OBJECT_TYPE_SHIP);
 				AddComponent_Transform(pInst, 0, 0.0f, SHIP_SIZE, SHIP_SIZE);   //Initial scale is 1, setting it to predefined SHIP_SIZE
 				AddComponent_Physics(pInst, 0);
+				Vector2DSet(&sgpShipStartPos, pInst->mpComponent_Transform->mPosition.x, pInst->mpComponent_Transform->mPosition.y);
+				Vector2DSet(&sgpShipStartPhys, pInst->mpComponent_Physics->mVelocity.x, pInst->mpComponent_Physics->mVelocity.y);
 				break;
 				
 			case OBJECT_TYPE_BULLET:
