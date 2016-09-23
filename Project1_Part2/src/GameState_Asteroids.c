@@ -36,7 +36,7 @@
 #define BULLET_SIZE		5.f
 #define ASTEROID_SIZE	50.f
 #define MISSILE_WIDTH	10.f
-#define MISSILE_HEIGHT  7.5f
+#define MISSILE_HEIGHT  5.f
 #define MISSILE_SPEED	75.f
 enum OBJECT_TYPE
 {
@@ -260,12 +260,12 @@ void GameStateAsteroidsLoad(void)
 	pShape->mType = OBJECT_TYPE_HOMING_MISSILE;
 
 	AEGfxMeshStart();
-	AEGfxTriAdd(-0.5f, 0.5f, 0xFF00FF00, 0.0f, 0.0f,
-		-0.5f, -0.5f, 0xFF00FF00, 0.0f, 0.0f,
-		0.5f, -0.5f, 0xFF00FF00, 0.0f, 0.0f);
-	AEGfxTriAdd(-0.5f, 0.5f, 0xFF00FF00, 0.0f, 0.0f,
-		0.5f, 0.5f, 0xFF00FF00, 0.0f, 0.0f,
-		0.5f, -0.5f, 0xFF00FF00, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFFFFFF, 0.0f, 0.0f,
+		-0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
+	AEGfxTriAdd(-0.5f, 0.5f, 0xFFFFFFFF, 0.0f, 0.0f,
+		0.5f, 0.5f, 0xFFFFFFFF, 0.0f, 0.0f,
+		0.5f, -0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
 	pShape->mpMesh = AEGfxMeshEnd();
 
 }
@@ -430,7 +430,7 @@ void GameStateAsteroidsUpdate(void)
 		GameObjectInstance* t;
 		t = (GameObjectInstanceCreate(OBJECT_TYPE_HOMING_MISSILE));
 		Vector2DSet(&(t->mpComponent_Physics->mVelocity), MISSILE_SPEED * cosf(sgpShip->mpComponent_Transform->mAngle), MISSILE_SPEED * sinf(sgpShip->mpComponent_Transform->mAngle));
-
+		
 		t = NULL;
 	}
 
@@ -518,7 +518,11 @@ void GameStateAsteroidsUpdate(void)
 
 		else if (pInst->mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_HOMING_MISSILE)
 		{
-			if (pInst->mpComponent_Target->mpTarget->mFlag != FLAG_ACTIVE)
+			pInst->mpComponent_Transform->mPosition.x = AEWrap(pInst->mpComponent_Transform->mPosition.x, winMinX - MISSILE_WIDTH, winMaxX + MISSILE_WIDTH);
+			pInst->mpComponent_Transform->mPosition.y = AEWrap(pInst->mpComponent_Transform->mPosition.y, winMinY - MISSILE_HEIGHT, winMaxY + MISSILE_HEIGHT);
+
+
+			if (pInst->mpComponent_Target->mpTarget == NULL  || pInst->mpComponent_Target->mpTarget->mFlag != FLAG_ACTIVE)
 			{
 				for (int i = 0; i < GAME_OBJ_INST_NUM_MAX; i++)
 				{
@@ -531,7 +535,26 @@ void GameStateAsteroidsUpdate(void)
 			}
 
 			//Homing logic goes here
+			if (pInst->mpComponent_Target->mpTarget != NULL)
+			{
+				Vector2D mVel, normal, asteroidVec;
 
+				Vector2DSet(&mVel, pInst->mpComponent_Physics->mVelocity.x, pInst->mpComponent_Physics->mVelocity.y);
+				Vector2DSet(&normal, -1 * mVel.y, mVel.x);
+				Vector2DSet(&asteroidVec, (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.x) - (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.x), (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.y) - (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.y));
+
+				float angle = (mVel.x * asteroidVec.x + mVel.y * asteroidVec.y) / (Vector2DLength(&mVel) * Vector2DLength(&asteroidVec));  //May need to turn to radians, check disssss
+				float a = min(HOMING_MISSILE_ROT_SPEED, acosf(angle * PI / 180));
+
+				if (normal.x * asteroidVec.x + normal.y * asteroidVec.y < 0)
+				{
+					a = -a;
+				}
+
+				pInst->mpComponent_Transform->mAngle = a*frameTime;
+
+			
+			}
 		}
 
 
@@ -581,52 +604,55 @@ void GameStateAsteroidsUpdate(void)
 	{
 	
 
-		if (sgGameObjectInstanceList[i].mFlag == FLAG_ACTIVE && sgGameObjectInstanceList[i].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_ASTEROID)
+		if ( sgGameObjectInstanceList[i].mFlag == FLAG_ACTIVE && sgGameObjectInstanceList[i].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_ASTEROID)
 		{
 			for (int j = 0; j < GAME_OBJ_INST_NUM_MAX; j++)
 			{
-				if (sgGameObjectInstanceList[j].mFlag != FLAG_ACTIVE || sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_ASTEROID)
+				if (sgGameObjectInstanceList[i].mFlag != FLAG_ACTIVE)
 				{
-					continue;
+					j = GAME_OBJ_INST_NUM_MAX;
 				}
-
-				if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_SHIP)
-				{
-					if (1==StaticRectToStaticRect(&(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY, &(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), sgGameObjectInstanceList[j].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[j].mpComponent_Transform->mScaleY))
+				else{
+					if (sgGameObjectInstanceList[j].mFlag == FLAG_ACTIVE)
 					{
-						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
-						//GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
-						//sgpShip = GameObjectInstanceCreate(OBJECT_TYPE_SHIP);
-						
-						
-						Vector2DSet(&sgpShip->mpComponent_Transform->mPosition, sgpShipStartPos.x, sgpShipStartPos.y);
-						Vector2DSet(&sgpShip->mpComponent_Physics->mVelocity, sgpShipStartPhys.x, sgpShipStartPhys.y);
-						//sgpShip->mpComponent_Transform = sgpShipStartPos;
-						//sgpShip->mpComponent_Physics = sgpShipStartPhys;
+						if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_SHIP)
+						{
+							if (1 == StaticRectToStaticRect(&(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY, &(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), sgGameObjectInstanceList[j].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[j].mpComponent_Transform->mScaleY))
+							{
+								GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
+								//GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
+								//sgpShip = GameObjectInstanceCreate(OBJECT_TYPE_SHIP);
+
+
+								Vector2DSet(&sgpShip->mpComponent_Transform->mPosition, sgpShipStartPos.x, sgpShipStartPos.y);
+								Vector2DSet(&sgpShip->mpComponent_Physics->mVelocity, sgpShipStartPhys.x, sgpShipStartPhys.y);
+								//sgpShip->mpComponent_Transform = sgpShipStartPos;
+								//sgpShip->mpComponent_Physics = sgpShipStartPhys;
+							}
+						}
+
+
+						else if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_BULLET)
+						{
+							if (1 == StaticPointToStaticRect(&(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), &(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY))
+							{
+								GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
+								GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
+							}
+						}
+
+
+						else if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_HOMING_MISSILE)
+						{
+							if (1 == StaticRectToStaticRect(&(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY, &(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), sgGameObjectInstanceList[j].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[j].mpComponent_Transform->mScaleY))
+							{
+								GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
+								GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
+
+							}
+						}
 					}
 				}
-
-
-				else if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_BULLET)
-				{
-					if (1==StaticPointToStaticRect(&(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), &(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY))
-					{
-						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
-						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
-					}
-				}
-
-
-				else if (sgGameObjectInstanceList[j].mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_HOMING_MISSILE)
-				{
-					if (1==StaticRectToStaticRect(&(sgGameObjectInstanceList[i].mpComponent_Transform->mPosition), sgGameObjectInstanceList[i].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[i].mpComponent_Transform->mScaleY, &(sgGameObjectInstanceList[j].mpComponent_Transform->mPosition), sgGameObjectInstanceList[j].mpComponent_Transform->mScaleX, sgGameObjectInstanceList[j].mpComponent_Transform->mScaleY))
-					{
-						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[i]));
-						GameObjectInstanceDestroy(&(sgGameObjectInstanceList[j]));
-						
-					}
-				}
-
 			}
 		}
 	}
