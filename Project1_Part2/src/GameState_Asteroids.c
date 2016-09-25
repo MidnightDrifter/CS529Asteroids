@@ -31,7 +31,7 @@
 
 // ---------------------------------------------------------------------------
 #define FRICTION	0.99f
-#define ASTREROID_SHIP_SCALE		4.f  //Asteroid is 4x larger than ship -- not really but eh
+#define ASTEROID_SHIP_SCALE		4.f  //Asteroid is 4x larger than ship -- not really but eh
 #define ASTEROID_SPEED				50.f
 #define BULLET_SIZE		5.f
 #define ASTEROID_SIZE	50.f
@@ -510,8 +510,8 @@ void GameStateAsteroidsUpdate(void)
 		else if (pInst->mpComponent_Sprite->mpShape->mType == OBJECT_TYPE_ASTEROID)
 		{
 
-			pInst->mpComponent_Transform->mPosition.x = AEWrap(pInst->mpComponent_Transform->mPosition.x, winMinX - SHIP_SIZE*ASTREROID_SHIP_SCALE, winMaxX + SHIP_SIZE*ASTREROID_SHIP_SCALE);
-			pInst->mpComponent_Transform->mPosition.y = AEWrap(pInst->mpComponent_Transform->mPosition.y, winMinY - SHIP_SIZE*ASTREROID_SHIP_SCALE, winMaxY + SHIP_SIZE*ASTREROID_SHIP_SCALE);
+			pInst->mpComponent_Transform->mPosition.x = AEWrap(pInst->mpComponent_Transform->mPosition.x, winMinX - ASTEROID_SIZE, winMaxX + ASTEROID_SIZE);
+			pInst->mpComponent_Transform->mPosition.y = AEWrap(pInst->mpComponent_Transform->mPosition.y, winMinY - ASTEROID_SIZE, winMaxY + ASTEROID_SIZE);
 		}
 
 		// Homing missile behavior (Not every game object instance will have this component!)
@@ -535,25 +535,28 @@ void GameStateAsteroidsUpdate(void)
 			}
 
 			//Homing logic goes here
-			if (pInst->mpComponent_Target->mpTarget != NULL)
+			if (pInst->mpComponent_Target->mpTarget != NULL && pInst->mpComponent_Target->mpTarget->mFlag == FLAG_ACTIVE)
 			{
 				Vector2D mVel, normal, asteroidVec;
 
 				Vector2DSet(&mVel, pInst->mpComponent_Physics->mVelocity.x, pInst->mpComponent_Physics->mVelocity.y);
 				Vector2DSet(&normal, -1 * mVel.y, mVel.x);
-				Vector2DSet(&asteroidVec, (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.x) - (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.x), (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.y) - (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.y));
+				Vector2DSet(&asteroidVec, (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.x) - (pInst->mpComponent_Transform->mPosition.x), (pInst->mpComponent_Target->mpTarget->mpComponent_Transform->mPosition.y) - (pInst->mpComponent_Transform->mPosition.y));
 
 				float angle = (mVel.x * asteroidVec.x + mVel.y * asteroidVec.y) / (Vector2DLength(&mVel) * Vector2DLength(&asteroidVec));  //May need to turn to radians, check disssss
-				float a = min(HOMING_MISSILE_ROT_SPEED, acosf(angle * PI / 180));
+				float a = min(HOMING_MISSILE_ROT_SPEED * frameTime, acosf(angle ));
 
 				if (normal.x * asteroidVec.x + normal.y * asteroidVec.y < 0)
 				{
 					a = -a;
 				}
 
-				pInst->mpComponent_Transform->mAngle = a*frameTime;
-
-			
+			float curAngle =	pInst->mpComponent_Transform->mAngle + a;
+				pInst->mpComponent_Transform->mAngle += a;
+				//float curAngle = pInst->mpComponent_Transform->mAngle +a;
+				Vector2DSet(&(pInst->mpComponent_Physics->mVelocity), cosf(curAngle), sinf(curAngle));
+				Vector2DNormalize(&(pInst->mpComponent_Physics->mVelocity), &(pInst->mpComponent_Physics->mVelocity));
+				Vector2DScale(&(pInst->mpComponent_Physics->mVelocity), &(pInst->mpComponent_Physics->mVelocity), MISSILE_SPEED, MISSILE_SPEED);
 			}
 		}
 
