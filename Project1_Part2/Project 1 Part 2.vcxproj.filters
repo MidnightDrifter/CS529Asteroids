@@ -54,4 +54,7 @@
   <ItemGroup>
     <None Include="..\Project 1 Part 2.pdf" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="README.txt" />
+  </ItemGroup>
 </Project>
