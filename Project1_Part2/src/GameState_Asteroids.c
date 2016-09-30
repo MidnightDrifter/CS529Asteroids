@@ -823,7 +823,7 @@ GameObjectInstance* GameObjectInstanceCreate(unsigned int ObjectType)			// From 
 
 			case OBJECT_TYPE_HOMING_MISSILE:
 				AddComponent_Sprite(pInst, OBJECT_TYPE_HOMING_MISSILE);
-				AddComponent_Transform(pInst, &(sgpShip->mpComponent_Transform->mPosition), 0.0f,MISSILE_WIDTH, MISSILE_HEIGHT);
+				AddComponent_Transform(pInst, &(sgpShip->mpComponent_Transform->mPosition), (sgpShip->mpComponent_Transform->mAngle),MISSILE_WIDTH, MISSILE_HEIGHT);
 				AddComponent_Physics(pInst, 0);
 				AddComponent_Target(pInst, 0);
 				break;
